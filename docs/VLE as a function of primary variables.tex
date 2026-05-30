@@ -1,0 +1,83 @@
+\documentclass[a4paper, twocolumn]{article}
+\usepackage[colorlinks=true,linkcolor=blue,anchorcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\usepackage{amsmath}
+\pagestyle{myheadings}
+\renewcommand{\subsectionmark}[1]{\markright{\thesubsection. #1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection. #1}}
+
+\begin{document}
+
+\section{2-D Newton-Raphson solution for binary-system VLE calculation}
+
+Start with the PR-EOS:
+
+\begin{equation}
+p = \frac{RT}{v-b} - \frac{a}{v^2 +2vb -b^2}
+\end{equation}
+
+The volumetric attraction term, $a$, and repulsion term,$b$, for a pure substance are:
+
+\begin{gather}
+a_i(T) = .4274\left[1  + \kappa \right]^2\frac{R^2 T_{ci}^2}{p_{ci}}\\
+\kappa = \left[.37464 + 1.54226\omega_i -  .26882\omega_i^2\right]
+\left(1-\sqrt{\frac{T}{T_{ci}}}\right)\nonumber\\
+b_i = .0778\frac{R T_{ci}}{p_{ci}}
+\end{gather}
+
+Where the subscript $i$ denotes the property of phase i. These are then combined into \emph{mixture} parameters for a binary mixture of $N_2$ and a single-component fuel with the following relations:
+
+\begin{gather}
+a(x_f, T) = x_f^2a_f(T)  + \nonumber \\
+2x_f (1-x_f) (1-k_{f/N_2})\sqrt{a_f(T)  a_{N_2}(T) } + \nonumber\\
+(1-x_f)^2 a_{N_2}(T) \\
+b(x_f) = x_f b_f + (1-x_f)  b_{N_2} 
+\end{gather}
+
+
+Where $x_f$ represents the mixture fraction of the fuel, and $k_{f/N_2}$ represents an interaction parameter that must be measured experimentally for each pairing of nitrogen and pure fuel. From this, an  expression for volume can be constructed in terms of x, p, and T. This was constructed symbolically in MATLAB and then converted into a function that can be evaluated for each individual mixture fraction, which executed much more quickly than substituting the individual variables with specific numerical values and reducing the resulting symbolic expression.
+
+In order to calculate vapor-liquid equilibrium, fugacity of the vapor and liquid phases must be calculated for any given fuel mixture fraction, $x_f$. The fugacities of a given species \emph{i}, in a given phase, \emph{k}, is given by:
+
+\begin{gather} \label{eq1}
+f_{ik}(x_i, p, v_k, T)  =  \nonumber\\
+x_i exp[\frac{b_i}{bRT}\left(pv_k-RT\right)-ln\left(\frac{p}{RT}(v_k-b)\right)  - \nonumber\\
+ \frac{\omega a}{\sqrt{8}bRT}ln\left(\frac{2v_k  + (2+\sqrt{8})b}{2v_k  - (2+\sqrt{8})b}\right)\\
+\omega=\frac{x_i a_i + (1-x_i)(1-k_{f/N_2})\sqrt{a_f a_{N_2}}}{a} - \frac{b_i}{b}\nonumber
+\end{gather}
+
+Given the pressure, $p$, and the composition of one phase, $x$, the composition of the second phase and the temperature at equilibrium are found where the fugacities of the individual species in the two phases are equal, or:
+
+\begin{equation}
+f_{i1}(x_{eq}, T_{eq}) = f_{i2}(y_{eq}, T_{eq})
+\end{equation}
+
+Or, using an objective function with a root at the desired solution:
+
+\begin{equation}
+g_i(y_{eq}, T_{eq}) = f_{i1}(x_{eq}, T_{eq}) - f_{i2}(y_{eq}, T_{eq}) = 0
+\end{equation}
+
+In a binary system, the second objective function is dependent upon the mixture fraction of the second substance, which will be $1-x_1$:
+
+\begin{gather}
+g_1(y_{eq}, T_{eq}) = \nonumber\\
+f_{11}(x_{eq}, T_{eq}) - f_{12}(y_{eq}, T_{eq}) \\
+g_2(1-y_{eq}, T_{eq}) = \nonumber\\
+f_{21}(1-x_{eq}, T_{eq}) - f_{22}(1-y_{eq}, T_{eq}) 
+\end{gather}
+
+Given an initial guess at the composition of the second phase in equilibrium with the first, $y_i$, and an initial guess at the equilibrium temperature, $T_{i}$, as well as the composition of the first phase, $x_eq$, the composition of the second phase and the equilibrium temperature given by the Newton-Raphson equation in 2 dimensions  ($y_{i+1}$ and $T_{i+1}$) will be:
+
+\[\begin{bmatrix}y_{i+1}\\T_{i+1}\end{bmatrix} = -J(y_i, T_i)^{-1}*\begin{bmatrix}g_1(y_i, T_i)\\g_2(y_i, T_i)\end{bmatrix} + \begin{bmatrix}y_i\\T_i\end{bmatrix}\]
+
+
+Where $J$ is the Jacobian matrix:
+
+\[J(y_i, T_i) = \begin{bmatrix}\frac{\delta g_1(y, T)}{\delta y} & \frac{\delta g_1(y, T)}{\delta T} \\\frac{\delta g_2(y, T)}{\delta y} & \frac{\delta g_2(y, T)}{\delta T}\end{bmatrix}\mid_{y = y_i, T = T_i} \]
+
+The temperature and mixture fraction were considered converged when the change in temperature between subsequent iterations is less than 1 degree.
+
+
+
+
+\end{document}
